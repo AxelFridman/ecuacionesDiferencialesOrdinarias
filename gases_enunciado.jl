@@ -269,10 +269,12 @@ end
 # ╔═╡ 9da98062-6c3b-49e3-8b96-92dcc89769c7
 # simulación
 begin
-	k1 = float.(1.0e-5)
+	k1 = float.(1.0e-2)
 	n = 50
 	masas = float.(generarMasasAlAzar(n, 1, 3.01))
-	tspan = [0,20]
+	tIni = 0
+	tFin = 20
+	tspan = [tIni,tFin]
 	datoInicialEspacial = float.(generarPosicionesVelocidadesAlAzar(n, L, 3))
 	#datoInicialEspacial = float.([1,1,0,0,0.1,0.1,0,0,1,0,0,0])
 	pInfo = float.([k1, masas, L, 0.01])
@@ -290,32 +292,32 @@ begin
 	plot!([0,0,L,L,0],[0,L,L,0,0], label="pared")
 end
 
-# ╔═╡ dc418b10-c299-485e-9e12-85fa10d7b3e7
-
-
-# ╔═╡ e3687e0a-450a-4bce-8520-7e613d526490
-begin
-#animate(solCuerpos,idxs=[(i,i+1) for i in 1:4:n*4])
-#plot!([0,0,L,L,0],[0,L,L,0,0], label="pared")
-end
-
 # ╔═╡ d1ede4d9-0d7b-43c2-aeb7-cf45a7f1d044
 begin
-	
+	cantFrames = 100
+	rangoTiempo = tIni: (tFin-tIni)/cantFrames : tFin
+	vectorTiempos = zeros(cantFrames)
+	for i in 1:cantFrames
+		vectorTiempos[i] = rangoTiempo[i]
+		
+	end
+	solCuerpos2 = solCuerpos(vectorTiempos)
 end
 
 # ╔═╡ a1524118-a9ac-46c4-a2cb-f54ca214c59c
 begin
-	animacion = @animate for i in 1:length(solCuerpos[1,:])
-		plot(xlims=(0,L),ylims=(0,L))
+	animacion = @animate for i in 1:length(solCuerpos2[1,:])
+		difPared = 0.5
+		plot(xlims=(0-difPared,L+difPared),ylims=(0-difPared,L+difPared))
 		for j in 1:4:(n)*4
-			scatter!([solCuerpos[j,i]], [solCuerpos[j+1,i]], legend=:none)
+			scatter!([solCuerpos2[j,i]], [solCuerpos2[j+1,i]], markersize=3*masas[Int(1+(j-1)/4)], legend=:none)
+			plot!([0,0,L,L,0],[0,L,L,0,0], label="pared")
 		end
 	end
 end
 
 # ╔═╡ 439d5166-361a-4ece-9e0d-d46e3fcb8354
-mp4(animacion, "videoParticulas")
+mp4(animacion ) #"videoParticulas.mp4"
 
 # ╔═╡ a5fa4f83-3169-4268-b816-7b8fe2c5333a
 md"""###### Ejercicio 5:
@@ -1985,8 +1987,6 @@ version = "1.4.1+0"
 # ╠═9da98062-6c3b-49e3-8b96-92dcc89769c7
 # ╠═47b8fa14-6162-49c6-9d21-4b4d0ae09de2
 # ╠═316fd5e6-f050-46db-8239-a39ee7a2a593
-# ╠═dc418b10-c299-485e-9e12-85fa10d7b3e7
-# ╠═e3687e0a-450a-4bce-8520-7e613d526490
 # ╠═d1ede4d9-0d7b-43c2-aeb7-cf45a7f1d044
 # ╠═a1524118-a9ac-46c4-a2cb-f54ca214c59c
 # ╠═439d5166-361a-4ece-9e0d-d46e3fcb8354
