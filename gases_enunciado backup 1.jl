@@ -269,9 +269,9 @@ end
 # ╔═╡ 9da98062-6c3b-49e3-8b96-92dcc89769c7
 # simulación
 begin
-	k1 = float.(10.0e-6)
-	n = 5
-	masas = float.(generarMasasAlAzar(n, 1, 1.01))
+	k1 = float.(1.0e-2)
+	n = 50
+	masas = float.(generarMasasAlAzar(n, 1, 3.01))
 	tIni = 0
 	tFin = 20
 	tspan = [tIni,tFin]
@@ -316,6 +316,9 @@ begin
 	end
 end
 
+# ╔═╡ 439d5166-361a-4ece-9e0d-d46e3fcb8354
+mp4(animacion ) #"videoParticulas.mp4"
+
 # ╔═╡ a5fa4f83-3169-4268-b816-7b8fe2c5333a
 md"""###### Ejercicio 5:
 
@@ -327,65 +330,16 @@ Es interesante también estudiar el caso en que las masas son variables. Simular
 
 # ╔═╡ 35f58720-56f4-4cce-adab-95414062f3d0
 # animación
-mp4(animacion ) #"videoParticulas.mp4"
+
 
 # ╔═╡ e606d381-d37e-414d-9c68-c65205e61873
-# funcion para animar
-function generarAnimacion(funcion, n, minMasa, maxMasa, maxVel, tIni, tFin, L, k1, k2, cantFrames)
-	masas = float.(generarMasasAlAzar(n, minMasa, maxMasa))
-	tspan = [tIni,tFin]
-	datoInicialEspacial = float.(generarPosicionesVelocidadesAlAzar(n, L, maxVel))
-	pInfo = float.([k1, masas, L, 0.01, k2])
-	Pgas  = ODEProblem(funcion,datoInicialEspacial,tspan,pInfo)
-	solCuerpos = solve(Pgas, callback=cbsetSala,dtmax=0.1)
-	rangoTiempo = tIni: (tFin-tIni)/cantFrames : tFin
-	vectorTiempos = zeros(cantFrames)
-	for i in 1:cantFrames
-		vectorTiempos[i] = rangoTiempo[i]
-		
-	end
-	solCuerpos2 = solCuerpos(vectorTiempos)
-	animacion = @animate for i in 1:length(solCuerpos2[1,:])
-		difPared = 0.5
-		plot(xlims=(0-difPared,L+difPared),ylims=(0-difPared,L+difPared))
-		for j in 1:4:(n)*4
-			scatter!([solCuerpos2[j,i]], [solCuerpos2[j+1,i]], markersize=3*masas[Int(1+(j-1)/4)], legend=:none)
-			plot!([0,0,L,L,0],[0,L,L,0,0], label="pared")
-		end
-	end
-	return animacion
-end
-
-
-# ╔═╡ bf1f9690-6dda-4a1f-8d6d-377360878fab
-begin
-	# 5 particulas
-	anm = generarAnimacion(gases, 5, 1, 1.01, 3, 0, 20, L, k1, 0, 100)
-	mp4(anm )
-end
-
-# ╔═╡ 8abdec27-c63a-4b4f-ade9-0cfa674b22dd
-begin
-	# 10 particulas
-	anm2 = generarAnimacion(gases, 10, 1, 1.01, 3, 0, 20, L, k1, 0,100)
-	mp4(anm2 )
-end
+# prueba con 2
 
 # ╔═╡ ecd0f578-2614-4473-af25-0db650688a06
 # prueba con 50 o 100
-begin
-	# 100 particulas
-	anm3 = generarAnimacion(gases, 100, 1, 1.01, 3, 0, 20, L, k1, 0, 100)
-	mp4(anm3 )
-end
 
 # ╔═╡ 29da6749-52fb-4881-88d8-556613629dac
 # prueba con 50 o 100 de masas distintas
-begin
-	# 100 particulas masas distintas
-	anm4 = generarAnimacion(gases, 10, 1, 4.01, 3, 0, 20, L, k1, 0, 100)
-	mp4(anm4 )
-end
 
 # ╔═╡ c0924df8-3a8f-4923-b341-e77e692fcb84
 md"""##### Adicionales:
@@ -403,55 +357,7 @@ También se puede agregar al sistema una fuerza gravitatoria (aunque dadas las m
 Realizar simulaciones con masas iguales y con masas variables."""
 
 # ╔═╡ 84d5d1f3-3592-470b-a75d-c210cbfd8171
-function gasesAtractivo(du,u,pInfo,t)
-	k1, masas, L, minDis, k2 = pInfo
-	
-	for gasIesimo in 1:Int(length(u)/4)
-		Posx1 = u[(gasIesimo-1)*4 + 1]
-		Posy1 = u[(gasIesimo-1)*4 + 2]
-		Velx1 = u[(gasIesimo-1)*4 + 3]
-		Vely1 = u[(gasIesimo-1)*4 + 4]
 
-		du[(gasIesimo-1)*4 + 1] = Velx1
-		du[(gasIesimo-1)*4 + 2] = Vely1
-		du[(gasIesimo-1)*4 + 3] = 0.
-		du[(gasIesimo-1)*4 + 4] = 0.
-	
-		for gasOtro in 1:Int(length(u)/4)
-			
-			Posx2 = u[(gasOtro-1)*4 + 1]
-			Posy2 = u[(gasOtro-1)*4 + 2]
-			Velx2 = u[(gasOtro-1)*4 + 3]
-			Vely2 = u[(gasOtro-1)*4 + 4]
-				
-			distEntreGases = distEuclideana(Posx1, Posy1, Posx2, Posy2)
-			
-			if(distEntreGases > minDis)
-				du[(gasIesimo-1)*4 + 3] = du[(gasIesimo-1)*4 + 3] -
-				4*k1*masas[gasOtro]*masas[gasIesimo]*(Posx2-Posx1)/(distEntreGases^6)+
-				3*k2*masas[gasOtro]*masas[gasIesimo]*(Posx2-Posx1)/(distEntreGases^5)
-					
-				du[(gasIesimo-1)*4 + 4] = du[(gasIesimo-1)*4 + 4] -
-				4*k1*masas[gasOtro]*masas[gasIesimo]*(Posy2-Posy1)/(distEntreGases^6)+
-				3*k2*masas[gasOtro]*masas[gasIesimo]*(Posy2-Posy1)/(distEntreGases^5)
-				
-					
-			end
-			
-			
-		end
-	end
-end
-
-# ╔═╡ 382ec6b5-4560-4579-9886-040816d786f4
-begin
-	# 10 particulas masas distintas, atrayendo
-	k22 = 1e-4
-	k11 = 1e-5
-	anm5 = generarAnimacion(gasesAtractivo, 5, 1, 3.01, 
-		, 0, 100, L, k11, k22, 600)
-	mp4(anm5 )
-end
 
 # ╔═╡ 70eb4406-cb25-4d69-abbb-ab2555b5ec1f
 md"""###### Energía:
@@ -467,6 +373,9 @@ $E_i^C = \frac{1}{2}m_i|v_i|^2.$
 Implementar funciones que calculen la energía potencial y la energía cinética para un instante de tiempo dado. Computar la energía total de una solución a lo largo del tiempo y graficarla. ¿Es constante? Si no lo es, ¿qué se puede hacer para lograr que sea constante? Graficar también cada energía por separado.
 
 """
+
+# ╔═╡ 9bef5920-c2bd-47d1-a856-f6bcc46ae9f7
+
 
 # ╔═╡ 7a78309c-1a30-40fd-8750-813e617a1622
 md"""###### Modulación de energía cinética: 
@@ -521,8 +430,8 @@ Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [compat]
-DifferentialEquations = "~7.4.0"
-Distributions = "~0.25.73"
+DifferentialEquations = "~7.3.0"
+Distributions = "~0.25.71"
 Plots = "~1.33.0"
 """
 
@@ -767,9 +676,9 @@ version = "0.4.0"
 
 [[deps.DiffEqBase]]
 deps = ["ArrayInterfaceCore", "ChainRulesCore", "DataStructures", "Distributions", "DocStringExtensions", "FastBroadcast", "ForwardDiff", "FunctionWrappers", "FunctionWrappersWrappers", "LinearAlgebra", "Logging", "MuladdMacro", "NonlinearSolve", "Parameters", "Printf", "RecursiveArrayTools", "Reexport", "Requires", "SciMLBase", "Setfield", "SparseArrays", "Static", "StaticArrays", "Statistics", "Tricks", "ZygoteRules"]
-git-tree-sha1 = "9cf35875034e50058848b2eeca9efa560cfa0ae6"
+git-tree-sha1 = "09d39361dd1f1dea55dd4b5ce22855134c795365"
 uuid = "2b5f629d-d688-5b77-993f-72d75c75574e"
-version = "6.104.3"
+version = "6.104.1"
 
 [[deps.DiffEqCallbacks]]
 deps = ["DataStructures", "DiffEqBase", "ForwardDiff", "LinearAlgebra", "Markdown", "NLsolve", "Parameters", "RecipesBase", "RecursiveArrayTools", "SciMLBase", "StaticArrays"]
@@ -797,9 +706,9 @@ version = "1.11.1"
 
 [[deps.DifferentialEquations]]
 deps = ["BoundaryValueDiffEq", "DelayDiffEq", "DiffEqBase", "DiffEqCallbacks", "DiffEqNoiseProcess", "JumpProcesses", "LinearAlgebra", "LinearSolve", "OrdinaryDiffEq", "Random", "RecursiveArrayTools", "Reexport", "SciMLBase", "SteadyStateDiffEq", "StochasticDiffEq", "Sundials"]
-git-tree-sha1 = "ae4a1b8a789c1d6ef2c6f0165f3fa2c79b5eb036"
+git-tree-sha1 = "c14099268b2bb616267be573cadb5ef913e54bea"
 uuid = "0c46a032-eb83-5123-abaf-570d42b7fbaa"
-version = "7.4.0"
+version = "7.3.0"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI"]
@@ -813,9 +722,9 @@ uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 
 [[deps.Distributions]]
 deps = ["ChainRulesCore", "DensityInterface", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SparseArrays", "SpecialFunctions", "Statistics", "StatsBase", "StatsFuns", "Test"]
-git-tree-sha1 = "34a557ce10eb2d9142f4ef60726b4f17c1c30941"
+git-tree-sha1 = "ee407ce31ab2f1bacadc3bd987e96de17e00aed3"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.73"
+version = "0.25.71"
 
 [[deps.DocStringExtensions]]
 deps = ["LibGit2"]
@@ -841,9 +750,9 @@ version = "2.4.8+0"
 
 [[deps.ExponentialUtilities]]
 deps = ["ArrayInterfaceCore", "GPUArraysCore", "GenericSchur", "LinearAlgebra", "Printf", "SparseArrays", "libblastrampoline_jll"]
-git-tree-sha1 = "b19c3f5001b11b71d0f970f354677d604f3a1a97"
+git-tree-sha1 = "b40c9037e1a33990466bc5d224ced34b34eebdb0"
 uuid = "d4d017d3-3776-5f7e-afef-a10c40355c18"
-version = "1.19.0"
+version = "1.18.0"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -870,9 +779,9 @@ version = "0.3.2"
 
 [[deps.FastLapackInterface]]
 deps = ["LinearAlgebra"]
-git-tree-sha1 = "14a6f7a21125f715d935fe8f83560ee833f7d79d"
+git-tree-sha1 = "cfd9d0dbb947181644c00bd7e988b4bb30a5b2a5"
 uuid = "29a986be-02c6-4525-aec4-84b980013641"
-version = "1.2.7"
+version = "1.2.6"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "Statistics"]
@@ -987,9 +896,9 @@ version = "1.3.14+0"
 
 [[deps.Graphs]]
 deps = ["ArnoldiMethod", "Compat", "DataStructures", "Distributed", "Inflate", "LinearAlgebra", "Random", "SharedArrays", "SimpleTraits", "SparseArrays", "Statistics"]
-git-tree-sha1 = "d2b1968d27b23926df4a156745935950568e4659"
+git-tree-sha1 = "a6d30bdc378d340912f48abf01281aab68c0dec8"
 uuid = "86223c79-3864-5bf0-83f7-82e725a168b6"
-version = "1.7.3"
+version = "1.7.2"
 
 [[deps.Grisu]]
 git-tree-sha1 = "53bb909d1151e57e2484c3d1b53e19552b887fb2"
@@ -1093,9 +1002,9 @@ version = "0.3.0"
 
 [[deps.Krylov]]
 deps = ["LinearAlgebra", "Printf", "SparseArrays"]
-git-tree-sha1 = "92256444f81fb094ff5aa742ed10835a621aef75"
+git-tree-sha1 = "a2327039e1c84615e22d662adb3df113caf44b70"
 uuid = "ba0b0d4f-ebba-5204-a429-3ac8c609bfb7"
-version = "0.8.4"
+version = "0.8.3"
 
 [[deps.KrylovKit]]
 deps = ["LinearAlgebra", "Printf"]
@@ -1265,9 +1174,9 @@ uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "Random", "Sockets"]
-git-tree-sha1 = "6872f9594ff273da6d13c7c1a1545d5a8c7d0c1c"
+git-tree-sha1 = "ae6676d5f576ccd21b6789c2cbe2ba24fcc8075d"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.1.6"
+version = "1.1.5"
 
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1317,10 +1226,10 @@ version = "1.0.1"
 uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
 [[deps.NonlinearSolve]]
-deps = ["ArrayInterfaceCore", "FiniteDiff", "ForwardDiff", "IterativeSolvers", "LinearAlgebra", "RecursiveArrayTools", "RecursiveFactorization", "Reexport", "SciMLBase", "Setfield", "StaticArrays", "UnPack"]
-git-tree-sha1 = "a754a21521c0ab48d37f44bbac1eefd1387bdcfc"
+deps = ["ArrayInterfaceCore", "FiniteDiff", "ForwardDiff", "LinearAlgebra", "RecursiveArrayTools", "Reexport", "SciMLBase", "Setfield", "StaticArrays", "UnPack"]
+git-tree-sha1 = "12ea26dc2d8d8f6773bccfe7e616b129b9705380"
 uuid = "8913a72c-1f9b-4ce2-8d82-65094dcecaec"
-version = "0.3.22"
+version = "0.3.23"
 
 [[deps.OffsetArrays]]
 deps = ["Adapt"]
@@ -1372,10 +1281,10 @@ uuid = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 version = "1.4.1"
 
 [[deps.OrdinaryDiffEq]]
-deps = ["Adapt", "ArrayInterface", "ArrayInterfaceGPUArrays", "ArrayInterfaceStaticArrays", "DataStructures", "DiffEqBase", "DocStringExtensions", "ExponentialUtilities", "FastBroadcast", "FastClosures", "FiniteDiff", "ForwardDiff", "FunctionWrappersWrappers", "LinearAlgebra", "LinearSolve", "Logging", "LoopVectorization", "MacroTools", "MuladdMacro", "NLsolve", "NonlinearSolve", "Polyester", "PreallocationTools", "Preferences", "RecursiveArrayTools", "Reexport", "SciMLBase", "SnoopPrecompile", "SparseArrays", "SparseDiffTools", "StaticArrays", "UnPack"]
-git-tree-sha1 = "68ea6b12e2ef96c350b6a329613fd1bb9de1f1e0"
+deps = ["Adapt", "ArrayInterface", "ArrayInterfaceGPUArrays", "ArrayInterfaceStaticArrays", "DataStructures", "DiffEqBase", "DocStringExtensions", "ExponentialUtilities", "FastBroadcast", "FastClosures", "FiniteDiff", "ForwardDiff", "FunctionWrappersWrappers", "LinearAlgebra", "LinearSolve", "Logging", "LoopVectorization", "MacroTools", "MuladdMacro", "NLsolve", "NonlinearSolve", "Polyester", "PreallocationTools", "RecursiveArrayTools", "Reexport", "SciMLBase", "SnoopPrecompile", "SparseArrays", "SparseDiffTools", "StaticArrays", "UnPack"]
+git-tree-sha1 = "d20891e46072ad2826fab4b9c8fcb4e4654eb8c9"
 uuid = "1dea7af3-3e70-54e6-95c3-0bf5283fa5ed"
-version = "6.27.1"
+version = "6.26.4"
 
 [[deps.PCRE_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1581,9 +1490,9 @@ version = "0.6.35"
 
 [[deps.SciMLBase]]
 deps = ["ArrayInterfaceCore", "CommonSolve", "ConstructionBase", "Distributed", "DocStringExtensions", "FunctionWrappersWrappers", "IteratorInterfaceExtensions", "LinearAlgebra", "Logging", "Markdown", "Preferences", "RecipesBase", "RecursiveArrayTools", "StaticArraysCore", "Statistics", "Tables"]
-git-tree-sha1 = "ce26aa756fd46913a6139e5259749f72169f5b5d"
+git-tree-sha1 = "8c7acbc1a974db5f533b59ab74b69042fa05b002"
 uuid = "0bca4576-84f4-4d90-8ffe-ffa030f20462"
-version = "1.58.0"
+version = "1.57.0"
 
 [[deps.Scratch]]
 deps = ["Dates"]
@@ -1698,9 +1607,9 @@ version = "1.9.0"
 
 [[deps.StochasticDiffEq]]
 deps = ["Adapt", "ArrayInterface", "DataStructures", "DiffEqBase", "DiffEqNoiseProcess", "DocStringExtensions", "FillArrays", "FiniteDiff", "ForwardDiff", "JumpProcesses", "LevyArea", "LinearAlgebra", "Logging", "MuladdMacro", "NLsolve", "OrdinaryDiffEq", "Random", "RandomNumbers", "RecursiveArrayTools", "Reexport", "SciMLBase", "SparseArrays", "SparseDiffTools", "StaticArrays", "UnPack"]
-git-tree-sha1 = "8062351f645bb23725c494be74619ef802a2ffa8"
+git-tree-sha1 = "47648a908783ddbd124cf3deb3eb0d18b7cffcce"
 uuid = "789caeaf-c7a9-5a7d-9973-96adeb23e2a0"
-version = "6.54.0"
+version = "6.53.0"
 
 [[deps.StrideArraysCore]]
 deps = ["ArrayInterface", "CloseOpenIntervals", "IfElse", "LayoutPointers", "ManualMemory", "SIMDTypes", "Static", "ThreadingUtilities"]
@@ -1740,9 +1649,9 @@ version = "1.0.1"
 
 [[deps.Tables]]
 deps = ["DataAPI", "DataValueInterfaces", "IteratorInterfaceExtensions", "LinearAlgebra", "OrderedCollections", "TableTraits", "Test"]
-git-tree-sha1 = "7149a60b01bf58787a1b83dad93f90d4b9afbe5d"
+git-tree-sha1 = "5ce79ce186cc678bbb5c5681ca3379d1ddae11a1"
 uuid = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
-version = "1.8.1"
+version = "1.7.0"
 
 [[deps.Tar]]
 deps = ["ArgTools", "SHA"]
@@ -1817,9 +1726,9 @@ version = "0.2.0"
 
 [[deps.VectorizationBase]]
 deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "IfElse", "LayoutPointers", "Libdl", "LinearAlgebra", "SIMDTypes", "Static"]
-git-tree-sha1 = "17b6042564eecf893aa893af94ec9ede4ddb307b"
+git-tree-sha1 = "9765c9389978f4c5a2c9c25dce4cef7c0f51dce3"
 uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
-version = "0.21.49"
+version = "0.21.48"
 
 [[deps.VertexSafeGraphs]]
 deps = ["Graphs"]
@@ -2080,17 +1989,16 @@ version = "1.4.1+0"
 # ╠═316fd5e6-f050-46db-8239-a39ee7a2a593
 # ╠═d1ede4d9-0d7b-43c2-aeb7-cf45a7f1d044
 # ╠═a1524118-a9ac-46c4-a2cb-f54ca214c59c
+# ╠═439d5166-361a-4ece-9e0d-d46e3fcb8354
 # ╟─a5fa4f83-3169-4268-b816-7b8fe2c5333a
 # ╠═35f58720-56f4-4cce-adab-95414062f3d0
 # ╠═e606d381-d37e-414d-9c68-c65205e61873
-# ╠═bf1f9690-6dda-4a1f-8d6d-377360878fab
-# ╠═8abdec27-c63a-4b4f-ade9-0cfa674b22dd
 # ╠═ecd0f578-2614-4473-af25-0db650688a06
 # ╠═29da6749-52fb-4881-88d8-556613629dac
 # ╟─c0924df8-3a8f-4923-b341-e77e692fcb84
 # ╠═84d5d1f3-3592-470b-a75d-c210cbfd8171
-# ╠═382ec6b5-4560-4579-9886-040816d786f4
 # ╟─70eb4406-cb25-4d69-abbb-ab2555b5ec1f
+# ╠═9bef5920-c2bd-47d1-a856-f6bcc46ae9f7
 # ╟─7a78309c-1a30-40fd-8750-813e617a1622
 # ╠═a52a3642-fc32-4ffc-94e4-d054e54e7ea0
 # ╟─8d702baa-8fb4-4ef4-ad31-b10404243a2e
